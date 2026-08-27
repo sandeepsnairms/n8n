@@ -418,6 +418,45 @@ describe('DocumentDB CRUD Node', () => {
 			expect(findOneAndReplaceSpy).toHaveBeenCalledTimes(3);
 		});
 
+		it('resolves dotted update keys in find-and-replace filters', async () => {
+			const findOneAndReplaceSpy = vi.spyOn(Collection.prototype, 'findOneAndReplace');
+			findOneAndReplaceSpy.mockResolvedValue(null);
+			const mock = mockExecuteFunctions(1.3, 'findOneAndReplace');
+			mock.getInputData.mockReturnValue([
+				{ json: { user: { id: 'user-1' }, value: 'first', collection: 'collection-1' } },
+			]);
+			mock.getNodeParameter.mockImplementation(
+				(parameterName: string, _itemIndex = 0, fallbackValue?: NodeParameterValueType) => {
+					switch (parameterName) {
+						case 'operation':
+							return 'findOneAndReplace';
+						case 'collection':
+							return 'collection-1';
+						case 'fields':
+							return 'user.id,value';
+						case 'updateKey':
+							return 'user.id';
+						case 'upsert':
+							return false;
+						case 'options.useDotNotation':
+							return true;
+						case 'options.dateFields':
+							return '';
+						default:
+							return fallbackValue;
+					}
+				},
+			);
+
+			await node.execute.call(mock);
+
+			expect(findOneAndReplaceSpy).toHaveBeenCalledWith(
+				{ 'user.id': 'user-1' },
+				{ user: { id: 'user-1' }, value: 'first' },
+				undefined,
+			);
+		});
+
 		it('pairs each find-and-replace output item to its input item', async () => {
 			const findOneAndReplaceSpy = vi.spyOn(Collection.prototype, 'findOneAndReplace');
 			findOneAndReplaceSpy.mockResolvedValue(null);

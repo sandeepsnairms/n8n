@@ -5,6 +5,7 @@ import type {
 	Sort,
 	MongoClient,
 } from 'mongodb';
+import get from 'lodash/get';
 import { ObjectId } from 'mongodb';
 import { NodeConnectionTypes, NodeOperationError, UserError } from 'n8n-workflow';
 import type {
@@ -299,7 +300,9 @@ export class DocumentDb implements INodeType {
 								);
 							}
 
-							const filter = { [updateKey]: item[updateKey] };
+							const filter = {
+								[updateKey]: useDotNotation ? get(item, updateKey) : item[updateKey],
+							};
 							if (updateKey === '_id') {
 								filter[updateKey] = new ObjectId(item[updateKey] as string);
 								delete item._id;
@@ -349,7 +352,9 @@ export class DocumentDb implements INodeType {
 
 					for (const item of updateItems) {
 						try {
-							const filter = { [updateKey]: item[updateKey] };
+							const filter = {
+								[updateKey]: useDotNotation ? get(item, updateKey) : item[updateKey],
+							};
 							if (updateKey === '_id') {
 								filter[updateKey] = new ObjectId(item[updateKey] as string);
 								delete item._id;
